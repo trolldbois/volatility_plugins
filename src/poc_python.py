@@ -51,7 +51,7 @@ class struct__PyStringObject(ctypes.Structure):
         ('ob_size', ctypes.c_size_t), # 16 Py_ssize_t = ssize_t
         ('ob_shash', ctypes.c_longlong), # 24, long long
         ('ob_sstate', ctypes.c_int), # 32
-        ('ob_sval', ctypes.c_char) # 36, ['array', 1, ['char']]]
+        ('ob_sval', ctypes.c_char) # 36, 'array' of size (ob_sval+1)
         ]
 
 class struct__PyDictEntry(ctypes.Structure):
