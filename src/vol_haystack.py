@@ -103,7 +103,7 @@ class Haystack(taskmods.DllList):
     def make_results(self, memory_handler, struct_type, my_constraints):
             # do the search
             # do not use the haystack HEAP parsing capabilities
-            if False:
+            if True:
                 ## PROD - use API
                 results = api.search_record(memory_handler, struct_type, my_constraints, extended_search=True)
                 # output handling
