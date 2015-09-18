@@ -58,7 +58,7 @@ ctx_size: [RangeValue(0,0xffff)]
 
 
 ########### EVP_CIPHER_CTX
-[struct_evp_cipher_st]
+[struct_evp_cipher_ctx_st]
 cipher: [NotNull]
 encrypt: [0,1]
 ## number we have left, so must be less than buffer_size
