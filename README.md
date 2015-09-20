@@ -13,9 +13,9 @@ If you submit multiple plugins, please specify if they should be evaluated as an
 Source Code
 ===========
 
-[1] https://github.com/trolldbois/volatility_plugins
-[2] pip install haystack # https://github.com/trolldbois/python-haystack/
-[2] pip install ctypeslib2 # https://github.com/trolldbois/ctypeslib
+1. https://github.com/trolldbois/volatility_plugins
+2. pip install haystack # https://github.com/trolldbois/python-haystack/
+3. pip install ctypeslib2 # https://github.com/trolldbois/ctypeslib
  
 Memory sample
 =============
@@ -33,6 +33,7 @@ Usage
 3. `vol.py --plugins=volatility_plugins/src/ -f <path_to_memory_dump> haystack -p <pid> -r <record name> -c <constraint_file>`
 
 Plugins:
+
     * haystackheap: optimised plugin to search for HEAP. please use the constraints file as indicated. 
     * haystacksearch: generic search for record in all memory space (very slow)
     * haystackallocated: search for record in allocated memory chunks only (somewhat experimental)
@@ -40,9 +41,9 @@ Plugins:
     * haystackreverse: reverse all allocated structure to file and guesstimate the field type of each structure.
 
 
-For example, to search for all records that could ba a WinXP x86 Heaps in the zeus.vmem image process 1668:
+For example, to search for all records that could ba a WinXP x86 Heaps in the zeus.vmem image process 1668 and 856:
 
-    $ #zeus.img image from http://malwarecookbook.googlecode.com/svn-history/r26/trunk/17/1/zeus.vmem.zip
+    zeus.img image from http://malwarecookbook.googlecode.com/svn-history/r26/trunk/17/1/zeus.vmem.zip
 
 We will use haystackheap to print out the PID and the address of HEAPs. This is a search not using the PEB, 
 but only the constraints that a HEAP should have. 
@@ -177,7 +178,13 @@ a record type in memory.
 Why it should win the contest
 =============================
 
-These plugins are an opening of the next level of forensics, into a process's memory.
+These plugins are an opening of the next level of forensics, into a process's structured memory.
 
-They open the way to the possibility of searching in memory for signature that are not bytes-based signature but
-signature that are the graph that results from memory allocation by malware.
+They open the way to the possibility of searching in memory for a new type of signature.
+Not signatures that are bytes-based.
+But signatures that are representing the graph that results from memory allocation by malware.
+
+Plus it also pretty easy to extract SSL session keys, passphrases, binary data as long as the record types are known.
+
+So this integration and plugins are also a basis for future plugins to easily 'search' for structures, without to have
+to guess the location of such records. The records type themselves are usually sufficient.
