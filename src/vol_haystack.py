@@ -207,64 +207,78 @@ class HaystackShow(HaystackSearch):
             outfd.write(instance)
 
 
+def _print(x):
+    print x
 
 class HaystackReverse(Haystack):
     """
     Reverse all the allocated records of a process memory.
+
+    You will need numpy.
     """
     def __init__(self, config, *args, **kwargs):
         self.config = config
         taskmods.DllList.__init__(self, config, *args, **kwargs)
 
     def make_results(self, pid, memory_handler):
-        from haystack.reverse import context
-        log.debug('[+] Loading the memory dump ')
-        ctx = context.get_context(dumpname)
-        try:
+        from haystack.reverse import reversers
+        from haystack.reverse import config
+
+        finder = memory_handler.get_heap_finder()
+        for heap in finder.get_heap_mappings():
+            heap_addr = heap.get_marked_heap_address()
+            context = reversers.ReverserContext(memory_handler, heap)
+            context.heap._context = context
+
+            _print('[+] Loading the memory dump ')
+            dumpname = 'haystack_reverse_%d'%pid
+            ctx = context.get_context(dumpname)
+
             if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
                 os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))
 
-            log.info("[+] Cache created in %s", config.get_record_cache_folder_name(ctx.dumpname))
-
-            # we use common allocators to find structures.
-            #log.debug('Reversing malloc')
-            #mallocRev = MallocReverser()
-            #ctx = mallocRev.reverse(ctx)
-            # mallocRev.check_inuse(ctx)
+            _print("[+] Cache created in %s", config.get_record_cache_folder_name(ctx.dumpname))
 
             # try to find some logical constructs.
-            log.debug('Reversing DoubleLinkedListReverser')
-            doublelink = DoubleLinkedListReverser(ctx)
+            _print('Reversing DoubleLinkedListReverser')
+            doublelink = reversers.DoubleLinkedListReverser(ctx)
             ctx = doublelink.reverse(ctx)
 
             # decode bytes contents to find basic types.
-            log.debug('Reversing Fields')
-            fr = FieldReverser(ctx)
+            _print('Reversing Fields')
+            fr = reversers.FieldReverser(ctx)
             ctx = fr.reverse(ctx)
 
             # identify pointer relation between structures
-            log.debug('Reversing PointerFields')
-            pfr = PointerFieldReverser(ctx)
+            _print('Reversing PointerFields')
+            pfr = reversers.PointerFieldReverser(ctx)
             ctx = pfr.reverse(ctx)
 
             # graph pointer relations between structures
-            log.debug('Reversing PointerGraph')
-            ptrgraph = PointerGraphReverser(ctx)
+            _print('Reversing PointerGraph')
+            ptrgraph = reversers.PointerGraphReverser(ctx)
             ctx = ptrgraph.reverse(ctx)
             ptrgraph._saveStructures(ctx)
 
             # save to file
-            save_headers(ctx)
-            # fr._saveStructures(ctx)
-            ##libRev = KnowStructReverser('libQt')
-            ##ctx = libRev.reverse(ctx)
-            # we have more enriched context
+            reversers.save_headers(ctx)
 
-            # etc
-        except KeyboardInterrupt as e:
-            # except IOError,e:
-            log.warning(e)
-            log.info('[+] %d structs extracted' % (ctx.structuresCount()))
-            raise e
-            pass
-        pass
+            #
+            outdirname = config.get_record_cache_folder_name(ctx.dumpname)
+            yield (pid, heap_addr, '%s/headers_values.py' % outdirname)
+
+    def calculate(self):
+        tasks = taskmods.DllList.calculate(self)
+        results = []
+        for task in tasks:
+            results.extend([res for res in self._do_haystack(task)])
+        return results
+
+    def render_text(self, outfd, data):
+        prevpid= None
+        for pid, heap_addr, filename in data:
+            if pid != prevpid:
+                outfd.write("*" * 72 + "\n")
+                outfd.write("Pid: {0:6}\n".format(pid))
+                prevpid = pid
+            outfd.write('Heap at 0x%x was reversed in \n' % (heap_addr, filename))
