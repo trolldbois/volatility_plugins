@@ -25,6 +25,8 @@ class Haystack(taskmods.DllList):
     Search for a record in all the memory space.
     """
 
+    my_name = ''
+
     def _do_haystack(self, task):
         pid = task.UniqueProcessId
         my_mappings = []
@@ -72,7 +74,8 @@ class Haystack(taskmods.DllList):
             my_target = target.TargetPlatform.make_target_win_64(profile)
 
         # create a memory handler
-        memory_handler = base.MemoryHandler(my_mappings, my_target, self.config.LOCATION)
+        dumpname = '%s_%d' % (self.config.LOCATION.split('/')[-1],pid)
+        memory_handler = base.MemoryHandler(my_mappings, my_target, dumpname)
 
         for res in self.make_results(pid, memory_handler):
             yield res
@@ -96,6 +99,7 @@ class HaystackSearch(Haystack):
                           action='store', type='str')
 
     def _init_haystack(self):
+        self.my_name = self.config.PROFILE
         # get the structure name and type
         self.modulename, sep, self.classname = self.config.RECORD_NAME.rpartition('.')
         # parse the constraint file
@@ -221,23 +225,23 @@ class HaystackReverse(Haystack):
         taskmods.DllList.__init__(self, config, *args, **kwargs)
 
     def make_results(self, pid, memory_handler):
+        from haystack.reverse import context
         from haystack.reverse import reversers
         from haystack.reverse import config
 
         finder = memory_handler.get_heap_finder()
         for heap in finder.get_heap_mappings():
             heap_addr = heap.get_marked_heap_address()
-            context = reversers.ReverserContext(memory_handler, heap)
-            context.heap._context = context
 
-            _print('[+] Loading the memory dump ')
-            dumpname = 'haystack_reverse_%d'%pid
-            ctx = context.get_context(dumpname)
+            dumpname = memory_handler.get_name()
+            if not os.access(dumpname, os.F_OK):
+                os.mkdir(dumpname)
 
-            if not os.access(config.get_record_cache_folder_name(ctx.dumpname), os.F_OK):
-                os.mkdir(config.get_record_cache_folder_name(ctx.dumpname))
+            ctx = context.ReverserContext(memory_handler, heap)
+            ctx.heap._context = ctx
 
-            _print("[+] Cache created in %s", config.get_record_cache_folder_name(ctx.dumpname))
+
+            _print("[+] Cache created in %s"% config.get_record_cache_folder_name(ctx.dumpname))
 
             # try to find some logical constructs.
             _print('Reversing DoubleLinkedListReverser')
@@ -269,6 +273,7 @@ class HaystackReverse(Haystack):
 
     def calculate(self):
         tasks = taskmods.DllList.calculate(self)
+
         results = []
         for task in tasks:
             results.extend([res for res in self._do_haystack(task)])
@@ -281,4 +286,4 @@ class HaystackReverse(Haystack):
                 outfd.write("*" * 72 + "\n")
                 outfd.write("Pid: {0:6}\n".format(pid))
                 prevpid = pid
-            outfd.write('Heap at 0x%x was reversed in \n' % (heap_addr, filename))
+            outfd.write('Heap at 0x%x was reversed in %s\n' % (heap_addr, filename))
