@@ -5,6 +5,9 @@ python vol.py --plugins=contrib/plugins -f ...
 
 """
 
+import sys
+import os
+
 import haystack
 from haystack import target
 from haystack.mappings import base
@@ -18,7 +21,9 @@ import volatility.plugins.taskmods as taskmods
 from volatility.renderers import TreeGrid
 
 class Haystack(taskmods.DllList):
-    """Display process command-line arguments"""
+    """
+    Search for a record in all the memory space.
+    """
     def __init__(self, config, *args, **kwargs):
         self.config = config
         taskmods.DllList.__init__(self, config, *args, **kwargs)
@@ -28,11 +33,6 @@ class Haystack(taskmods.DllList):
         config.add_option('CONSTRAINT_FILE', short_option='c', default= None,
                           help='Using this constraint file',
                           action='store', type='str')
-
-    def unified_output(self, data):
-        # blank header in case there is no shimcache data
-        return TreeGrid([("PID", int), ("Address", int)
-                       ], self.generator(data))
 
     def _init_haystack(self):
         # get the structure name and type
@@ -95,42 +95,102 @@ class Haystack(taskmods.DllList):
         memory_handler = base.MemoryHandler(my_mappings, my_target, self.config.LOCATION)
 
         # import the record class in the haystack model
+        # we need pwd in path
+        sys.path.append(os.getcwd())
         module = memory_handler.get_model().import_module(self.modulename)
         struct_type = getattr(module, self.classname)
         for res in self.make_results(memory_handler, struct_type, self.my_constraints):
             yield pid, res
 
     def make_results(self, memory_handler, struct_type, my_constraints):
-            # do the search
-            # do not use the haystack HEAP parsing capabilities
-            if True:
-                ## PROD - use API
-                results = api.search_record(memory_handler, struct_type, my_constraints, extended_search=True)
-                # output handling
-                ret = api.output_to_python(memory_handler, results)
-                for instance, addr in ret:
-                    yield addr
-            else:
-                ## DEBUG - use optimised search space for HEAP
-                my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler, my_constraints)
-                for mapping in memory_handler.get_mappings():
-                    res = my_searcher._search_in(mapping, struct_type, nb=1, align=0x1000)
-                    if res:
-                        instance, addr = api.output_to_python(memory_handler, res)[0]
-                        yield addr
+        # do the search
+        # do not use the haystack HEAP parsing capabilities
+        ## PROD - use API
+        results = api.search_record(memory_handler, struct_type, my_constraints, extended_search=True)
+        # output handling
+        ret = api.output_to_python(memory_handler, results)
+        for instance, addr in ret:
+            yield addr
+
+    #def generator(self, data):
+    #    self._init_haystack()
+    #    for task in data:
+    #        yield self._search(task)
+
+    def calculate(self):
+        self._init_haystack()
+        tasks = taskmods.DllList.calculate(self)
+        results = []
+        for task in tasks:
+            results.extend([(pid, addr) for pid, addr in self._search(task)])
+        return results
+
+    def render_text(self, outfd, data):
+        prevpid= None
+        for pid, addr in data:
+            if pid != prevpid:
+                outfd.write("*" * 72 + "\n")
+                outfd.write("Pid: {0:6}\n".format(pid))
+                prevpid = pid
+            outfd.write('Record %s at 0x%x\n' % (self.classname, addr))
+
+#    def unified_output(self, data):
+#        # blank header in case there is no shimcache data
+#        return TreeGrid([("PID", int), ("Address", int)
+#                       ], self.generator(data))
+
+
+class HaystackHeap(Haystack):
+    """
+    Search for a record in an optimised way, suitable for windows HEAP search.
+    """
+    def make_results(self, memory_handler, struct_type, my_constraints):
+        ## DEBUG - use optimised search space for HEAP
+        my_searcher = searcher.AnyOffsetRecordSearcher(memory_handler, my_constraints)
+        for mapping in memory_handler.get_mappings():
+            res = my_searcher._search_in(mapping, struct_type, nb=1, align=0x1000)
+            if res:
+                instance, addr = api.output_to_python(memory_handler, res)[0]
+                yield addr
             ## use direct load
             # results = api.load_record(memory_handler, struct_type, 0x150000, load_constraints=None)
 
-    def render_text(self, outfd, data):
-        self._init_haystack()
-        for task in data:
-            outfd.write("*" * 72 + "\n")
-            outfd.write("Pid: {0:6}\n".format(task.UniqueProcessId))
-            for res in self._search(task):
-                x, addr = res
-                outfd.write('Record %s at 0x%x\n' % (self.classname, addr))
+class HaystackAllocated(Haystack):
+    """
+    Search for a record only in allocated memory chunks.
+    """
+    def make_results(self, memory_handler, struct_type, my_constraints):
+        # do the search
+        # USE the haystack HEAP parsing capabilities
+        ## PROD - use API
+        results = api.search_record(memory_handler, struct_type, my_constraints, extended_search=False)
+        # output handling
+        ret = api.output_to_python(memory_handler, results)
+        for instance, addr in ret:
+            yield addr
 
-    def generator(self, data):
-        self._init_haystack()
-        for task in data:
-            yield self._search(task)
+class HaystackShow(Haystack):
+    """
+    Show the record value
+    """
+    def __init__(self, config, *args, **kwargs):
+        Haystack.__init__(self, config, *args, **kwargs)
+        config.add_option('ADDRESS', short_option='a', default= None,
+                          help='Using this address (hex) to load the record',
+                          action='store', type='str')
+
+    def make_results(self, memory_handler, struct_type, my_constraints):
+        #if self.config.ADDRESS:
+        addr = int(self.config.ADDRESS, 16)
+        results = api.load_record(memory_handler, struct_type, addr, load_constraints=my_constraints)
+        instance = api.output_to_string(memory_handler, [results])
+        yield (instance, addr)
+
+    def render_text(self, outfd, data):
+        for pid, (instance, addr) in data:
+            outfd.write("*" * 72 + "\n")
+            outfd.write("Pid: {0:6}\n".format(pid))
+            outfd.write('Record %s at 0x%x\n' % (self.classname, addr))
+            outfd.write('Record content:\n')
+            outfd.write(instance)
+

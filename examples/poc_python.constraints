@@ -1,2 +1,8 @@
 [struct__PyStringObject]
+ob_refcnt: [RangeValue(1,4096)]
+ob_type: [NotNull]
+#[RangeValue(16,4096)]
+ob_size: [RangeValue(1,4096)]
+ob_shash: [0xffffffffffffffff, 0xffffffff, -1]
 ob_sstate: [0,1,2]
+

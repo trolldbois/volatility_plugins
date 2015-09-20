@@ -1,3 +1,5 @@
+# RELAXED constraints. will show up some false positive.
+
 [union__HEAP_USERDATA_HEADER_0]
 SFreeListEntry: IgnoreMember
 
@@ -11,16 +13,16 @@ SubSegmentCode: IgnoreMember
 Signature: [0xeeffeeff]
 # 1 = LAL, 2 = LFH, 0 = Backend (chunks>= 16k)
 FrontEndHeapType: [0, 1, 2]
-# CommitRoutine: IgnoreMember
-# Segments: IgnoreMember
+CommitRoutine: IgnoreMember
+Segments: IgnoreMember
 UnusedUnCommittedRanges: IgnoreMember
-#VirtualAllocdBlocks: IgnoreMember
-#FreeLists: IgnoreMember
+VirtualAllocdBlocks: IgnoreMember
+FreeLists: IgnoreMember
 
 [struct__HEAP_SEGMENT]
 Signature: [0xffeeffee]
 LastValidEntry: IgnoreMember
-Heap: NotNull
+Heap: IgnoreMember
 
 [struct__ERESOURCE]
 SystemResourcesList: IgnoreMember

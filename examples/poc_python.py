@@ -1,8 +1,15 @@
+# -*- coding: utf-8 -*-
+#
+# TARGET arch is: []
+# WORD_SIZE is: 8
+# POINTER_SIZE is: 8
+# LONGDOUBLE_SIZE is: 16
+#
 
 import ctypes
 
 # if local wordsize is same as target, keep ctypes pointer function.
-if ctypes.sizeof(ctypes.c_void_p) == 4:
+if ctypes.sizeof(ctypes.c_void_p) == 8:
     POINTER_T = ctypes.POINTER
 else:
     # required to access _ctypes
@@ -15,7 +22,7 @@ else:
     ctypes._pointer_t_type_cache = {}
     def POINTER_T(pointee):
         # a pointer should have the same length as LONG
-        fake_ptr_base_type = ctypes.c_uint32
+        fake_ptr_base_type = ctypes.c_uint64
         # specific case for c_void_p
         if pointee is None: # VOID pointer type. c_void_p.
             pointee = type(None) # ctypes.c_void_p # ctypes.c_ulong
@@ -26,7 +33,7 @@ else:
             return ctypes._pointer_t_type_cache[clsname]
         # make template
         class _T(_ctypes._SimpleCData,):
-            _type_ = 'I'
+            _type_ = 'L'
             _subtype_ = pointee
             def _sub_addr_(self):
                 return self.value
@@ -36,7 +43,7 @@ else:
                 raise TypeError('This is not a ctypes pointer.')
             def __init__(self, **args):
                 raise TypeError('This is not a ctypes pointer. It is not instanciable.')
-        _class = type('LP_%d_%s'%(4, clsname), (_T,),{})
+        _class = type('LP_%d_%s'%(8, clsname), (_T,),{})
         ctypes._pointer_t_type_cache[clsname] = _class
         return _class
 
@@ -45,6 +52,7 @@ else:
 # there are more structures at the beginning, which we don't care about
 
 class struct__PyStringObject(ctypes.Structure):
+    _pack_ = True
     _fields_ = [
         ('ob_refcnt', ctypes.c_size_t), # 0 Py_ssize_t = ssize_t
         ('ob_type', POINTER_T(None)), # 8
