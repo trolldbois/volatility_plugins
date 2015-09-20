@@ -34,9 +34,10 @@ Usage
 
 Plugins:
     * haystackheap: optimised plugin to search for HEAP. please use the constraints file as indicated. 
-    * haystack: generic search for record in all memory space (very slow)
+    * haystacksearch: generic search for record in all memory space (very slow)
     * haystackallocated: search for record in allocated memory chunks only (somewhat experimental)
     * haystackshow: load and show the value of a record if loaded from a specific address
+    * haystackreverse: reverse all allocated structure to file and guesstimate the field type of each structure.
 
 
 For example, to search for all records that could ba a WinXP x86 Heaps in the zeus.vmem image process 1668:
@@ -147,6 +148,17 @@ Keep in mind you might want to generate ctypes for a different architecture than
 For example, to list all OpenSSL cipher session context records from a process 
 
     $ vol.py --plugins=volatility_plugins/src -f somelinux.img -r examples.records_openssl_32.struct_evp_cipher_ctx_st -c examples/openssl.constraints 
+
+
+And finally , if you are adventurous, you can try to reverse a process' memory:
+
+    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackreverse -p 856
+    
+    [..]
+    
+You will find a few folders named zeus.vmem_856/ with the produce of the reverse in there.
+
+Interesting files are named headers_values.py
 
 
 Motivation for this work
