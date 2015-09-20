@@ -23,4 +23,6 @@ you can use ctypeslib to generate your own structures frmo your favorite C heade
 
 You might want to look at https://github.com/trolldbois/ctypeslib to produce your own records.
 
-For example, Work in progress is ongoing to get SSH/SSL record from sslsnoop updated to the latest version of haystack. 
+
+For example, to list all OpenSSL cipher session context records from a process 
+`vol.py --plugins=volatility_plugins/src -f ~/outputs/vol/zeus.vmem haystack -r haystack.structures.win32.winxp_32.HEAP -c  winxpheap.constraints -p4` 
