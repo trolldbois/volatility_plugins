@@ -230,7 +230,7 @@ class HaystackReverse(Haystack):
         from haystack.reverse import config
 
         finder = memory_handler.get_heap_finder()
-        for heap in finder.get_heap_mappings():
+        for i, heap in enumerate(finder.get_heap_mappings()):
             heap_addr = heap.get_marked_heap_address()
 
             dumpname = memory_handler.get_name()
@@ -241,7 +241,7 @@ class HaystackReverse(Haystack):
             ctx.heap._context = ctx
 
 
-            _print("[+] Cache created in %s"% config.get_record_cache_folder_name(ctx.dumpname))
+            _print("[+] Cache %d created in %s" % (i,config.get_record_cache_folder_name(ctx.dumpname)))
 
             # try to find some logical constructs.
             _print('Reversing DoubleLinkedListReverser')
@@ -265,6 +265,7 @@ class HaystackReverse(Haystack):
             ptrgraph._saveStructures(ctx)
 
             # save to file
+            _print('Saving headers')
             reversers.save_headers(ctx)
 
             #
