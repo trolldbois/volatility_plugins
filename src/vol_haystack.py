@@ -269,8 +269,10 @@ class HaystackReverse(Haystack):
             reversers.save_headers(ctx)
 
             #
-            outdirname = config.get_record_cache_folder_name(ctx.dumpname)
-            yield (pid, heap_addr, '%s/headers_values.py' % outdirname)
+            outdirname = config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES,
+                                                   context.dumpname,
+                                                   hex(context._heap_start))
+            yield (pid, heap_addr, outdirname)
 
     def calculate(self):
         tasks = taskmods.DllList.calculate(self)
