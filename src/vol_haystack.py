@@ -270,8 +270,8 @@ class HaystackReverse(Haystack):
 
             #
             outdirname = config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES,
-                                                   context.dumpname,
-                                                   hex(context._heap_start))
+                                                   ctx.dumpname,
+                                                   '0x%x' % ctx._heap_start)
             yield (pid, heap_addr, outdirname)
 
     def calculate(self):
