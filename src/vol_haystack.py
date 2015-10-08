@@ -232,46 +232,42 @@ class HaystackReverse(Haystack):
         finder = memory_handler.get_heap_finder()
         for i, heap in enumerate(finder.get_heap_mappings()):
             heap_addr = heap.get_marked_heap_address()
-
+            # create a cache local folder outside of the VM image
             dumpname = memory_handler.get_name()
             if not os.access(dumpname, os.F_OK):
                 os.mkdir(dumpname)
 
-            ctx = context.ReverserContext(memory_handler, heap)
-            ctx.heap._context = ctx
+            _print("[+] Cache %d created in %s" % (i,config.get_record_cache_folder_name(dumpname)))
+            # reverse structure in this heap
+            _print("[+] Reversing allocated records from Heap 0x%x" % heap_addr)
+            reversers.reverse_heap(memory_handler, heap_addr)
 
+        # now improve the cross-heap metadata reversing
+        for i, heap in enumerate(finder.get_heap_mappings()):
+            heap_addr = heap.get_marked_heap_address()
+            ctx = memory_handler.get_cached_context_for_heap(heap)
 
-            _print("[+] Cache %d created in %s" % (i,config.get_record_cache_folder_name(ctx.dumpname)))
-
-            # try to find some logical constructs.
-            _print('Reversing DoubleLinkedListReverser')
-            doublelink = reversers.DoubleLinkedListReverser(ctx)
-            ctx = doublelink.reverse(ctx)
-
-            # decode bytes contents to find basic types.
-            _print('Reversing Fields')
-            fr = reversers.FieldReverser(ctx)
-            ctx = fr.reverse(ctx)
+            _print("[+] Reversing advanced metadata from Heap 0x%x" % heap_addr)
 
             # identify pointer relation between structures
-            _print('Reversing PointerFields')
+            _print('[-]\tReversing PointerFields')
             pfr = reversers.PointerFieldReverser(ctx)
             ctx = pfr.reverse(ctx)
 
             # graph pointer relations between structures
-            _print('Reversing PointerGraph')
+            _print('[-]\tReversing PointerGraph')
             ptrgraph = reversers.PointerGraphReverser(ctx)
             ctx = ptrgraph.reverse(ctx)
             ptrgraph._saveStructures(ctx)
 
             # save to file
-            _print('Saving headers')
+            _print('[-]\tSaving headers')
             reversers.save_headers(ctx)
 
-            #
+            # get the name of the interesting text output for the user.
             outdirname = config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES,
                                                    ctx.dumpname,
-                                                   '0x%x' % ctx._heap_start)
+                                                   ctx._heap_start)
             yield (pid, heap_addr, outdirname)
 
     def calculate(self):
