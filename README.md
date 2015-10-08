@@ -161,6 +161,18 @@ You will find a few folders named zeus.vmem_856/ with the produce of the reverse
 
 Interesting files are named headers_values.py
 
+Based on that a lot of plugins can be made, like a strings extractor. It used heuristics to extract readable allocation. 
+
+    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackreversestrings -p 856
+
+    ************************************************************************
+    Pid:    856
+    856,0xbf000,0x8 bytes,u'\x...0\n'
+    856,0x92020,0x30 bytes,u'C:\\WINDOWS\\setupapi.log\x00'
+    856,0xa4028,0x54 bytes,u'Network Location Awareness (NLA) Namespace'
+    856,0xb408c,0xac bytes,u'MSAFD NetBIOS [\\Device\\NetBT_Tcpip_{AD92BA6E-D818-40B8-BC01-D4D8A59937A1}] SEQPACKET 2'
+    856,0xb428c,0x22 bytes,'%SystemRoot%\sys...m32\mswsock.dll'
+    [..]
 
 Motivation for this work
 ========================

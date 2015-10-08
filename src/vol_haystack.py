@@ -286,3 +286,35 @@ class HaystackReverse(Haystack):
                 outfd.write("Pid: {0:6}\n".format(pid))
                 prevpid = pid
             outfd.write('Heap at 0x%x was reversed in %s\n' % (heap_addr, filename))
+
+
+class HaystackReverseStrings(HaystackReverse):
+    """
+    Reverse all the strings in allocated chunks of a process memory.
+    """
+    def __init__(self, config, *args, **kwargs):
+        self.config = config
+        HaystackReverse.__init__(self, config, *args, **kwargs)
+
+    def make_results(self, pid, memory_handler):
+        # create all contextes
+        for x in super(HaystackReverseStrings, self).make_results(pid, memory_handler):
+            pass
+
+        # look at each record in each structure for strings
+        for ctx in memory_handler.get_cached_context():
+            for record in ctx.listStructures():
+                for field in record.get_fields():
+                    addr = record._vaddr + field.offset
+                    if field.isString():
+                        maxlen = len(field)
+                        yield (pid, addr, maxlen, field.getValue(maxlen+1))
+
+    def render_text(self, outfd, data):
+        prevpid= None
+        for pid, addr, length, _string in data:
+            if pid != prevpid:
+                outfd.write("*" * 72 + "\n")
+                outfd.write("Pid: {0:6}\n".format(pid))
+                prevpid = pid
+            outfd.write('%d,0x%x,0x%x bytes,%s\n' % (pid, addr, length, _string))
