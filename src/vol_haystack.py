@@ -6,19 +6,17 @@ python vol.py --plugins=contrib/plugins -f ...
 """
 
 import sys
-import os
-
-import haystack
 from haystack import target
-from haystack.mappings import base
-from haystack.mappings import vol as hvol
 from haystack import api
-from haystack.search import searcher
 from haystack import constraints
 
+from haystack.mappings import base
+from haystack.mappings import vol as hvol
+from haystack.search import searcher
 
+import os
 import volatility.plugins.taskmods as taskmods
-from volatility.renderers import TreeGrid
+
 
 class Haystack(taskmods.DllList):
     """
@@ -225,7 +223,6 @@ class HaystackReverse(Haystack):
         taskmods.DllList.__init__(self, config, *args, **kwargs)
 
     def make_results(self, pid, memory_handler):
-        from haystack.reverse import context
         from haystack.reverse import reversers
         from haystack.reverse import config
 
@@ -252,13 +249,13 @@ class HaystackReverse(Haystack):
             # identify pointer relation between structures
             _print('[-]\tReversing PointerFields')
             pfr = reversers.PointerFieldReverser(ctx)
-            ctx = pfr.reverse(ctx)
+            pfr.reverse()
 
             # graph pointer relations between structures
             _print('[-]\tReversing PointerGraph')
             ptrgraph = reversers.PointerGraphReverser(ctx)
-            ctx = ptrgraph.reverse(ctx)
-            ptrgraph._saveStructures(ctx)
+            ptrgraph.reverse()
+            ctx.save_structures()
 
             # save to file
             _print('[-]\tSaving headers')
@@ -316,5 +313,6 @@ class HaystackReverseStrings(HaystackReverse):
             if pid != prevpid:
                 outfd.write("*" * 72 + "\n")
                 outfd.write("Pid: {0:6}\n".format(pid))
+                outfd.write("Pid, address, size, string")
                 prevpid = pid
             outfd.write('%d,0x%x,0x%x bytes,%s\n' % (pid, addr, length, _string))
