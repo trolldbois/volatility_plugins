@@ -241,9 +241,10 @@ class HaystackReverse(Haystack):
             heap_addr = heap.get_marked_heap_address()
             ctx = process_context.get_context_for_heap(heap)
             # get the name of the interesting text output for the user.
-            outdirname = config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES,
-                                                   ctx.dumpname,
-                                                   ctx._heap_start)
+            outdirname = ctx.get_filename_cache_headers()
+            #config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES,
+            #                                       ctx.dumpname,
+            #                                       ctx._heap_start)
             yield (pid, heap_addr, outdirname)
 
     def calculate(self):
@@ -282,10 +283,11 @@ class HaystackReverseStrings(HaystackReverse):
         for ctx in process_context.list_contextes():
             for record in ctx.listStructures():
                 for field in record.get_fields():
-                    addr = record._vaddr + field.offset
-                    if field.isString():
+                    addr = record.address + field.offset
+                    if field.is_string():
                         maxlen = len(field)
-                        yield (pid, addr, maxlen, field.getValue(maxlen+1))
+                        value = record.get_value_for_field(field, maxlen+10)
+                        yield (pid, addr, maxlen, value)
 
     def render_text(self, outfd, data):
         prevpid= None
