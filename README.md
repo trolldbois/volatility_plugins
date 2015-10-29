@@ -163,7 +163,11 @@ You will find a few folders named zeus.vmem_856/ with the produce of the reverse
 
 Interesting files are named headers_values.py
 
-Based on that a lot of plugins can be made, like a strings extractor. It used heuristics to extract readable allocation. 
+Based on that a lot of plugins can be made, like a strings extractor. 
+HaystackReverseStrings is an string extractor.
+But instead of parsing the whole memory dumps, it only looks at strings contained into the process 
+valid memory allocations.
+ 
 
     $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackreversestrings -p 856
 
