@@ -170,6 +170,7 @@ class HaystackHeap(HaystackSearch):
             ## use direct load
             # results = api.load_record(memory_handler, struct_type, 0x150000, load_constraints=None)
 
+
 class HaystackAllocated(HaystackSearch):
     """
     Search for a record only in allocated memory chunks.
@@ -183,6 +184,7 @@ class HaystackAllocated(HaystackSearch):
         ret = api.output_to_python(memory_handler, results)
         for instance, addr in ret:
             yield addr
+
 
 class HaystackShow(HaystackSearch):
     """
@@ -212,6 +214,7 @@ class HaystackShow(HaystackSearch):
 def _print(x):
     print x
 
+
 class HaystackReverse(Haystack):
     """
     Reverse all the allocated records of a process memory.
@@ -223,44 +226,20 @@ class HaystackReverse(Haystack):
         taskmods.DllList.__init__(self, config, *args, **kwargs)
 
     def make_results(self, pid, memory_handler):
-        from haystack.reverse import reversers
         from haystack.reverse import config
+        from haystack.reverse import api
 
         finder = memory_handler.get_heap_finder()
+        dumpname = memory_handler.get_name()
+        if not os.access(dumpname, os.F_OK):
+            os.mkdir(dumpname)
+
+        api.reverse_instances(memory_handler)
+
+        process_context = memory_handler.get_reverse_context()
         for i, heap in enumerate(finder.get_heap_mappings()):
             heap_addr = heap.get_marked_heap_address()
-            # create a cache local folder outside of the VM image
-            dumpname = memory_handler.get_name()
-            if not os.access(dumpname, os.F_OK):
-                os.mkdir(dumpname)
-
-            _print("[+] Cache %d created in %s" % (i,config.get_record_cache_folder_name(dumpname)))
-            # reverse structure in this heap
-            _print("[+] Reversing allocated records from Heap 0x%x" % heap_addr)
-            reversers.reverse_heap(memory_handler, heap_addr)
-
-        # now improve the cross-heap metadata reversing
-        for i, heap in enumerate(finder.get_heap_mappings()):
-            heap_addr = heap.get_marked_heap_address()
-            ctx = memory_handler.get_cached_context_for_heap(heap)
-
-            _print("[+] Reversing advanced metadata from Heap 0x%x" % heap_addr)
-
-            # identify pointer relation between structures
-            _print('[-]\tReversing PointerFields')
-            pfr = reversers.PointerFieldReverser(ctx)
-            pfr.reverse()
-
-            # graph pointer relations between structures
-            _print('[-]\tReversing PointerGraph')
-            ptrgraph = reversers.PointerGraphReverser(ctx)
-            ptrgraph.reverse()
-            ctx.save_structures()
-
-            # save to file
-            _print('[-]\tSaving headers')
-            reversers.save_headers(ctx)
-
+            ctx = process_context.get_context_for_heap(heap)
             # get the name of the interesting text output for the user.
             outdirname = config.get_cache_filename(config.CACHE_GENERATED_PY_HEADERS_VALUES,
                                                    ctx.dumpname,
@@ -298,8 +277,9 @@ class HaystackReverseStrings(HaystackReverse):
         for x in super(HaystackReverseStrings, self).make_results(pid, memory_handler):
             pass
 
+        process_context = memory_handler.get_reverse_context()
         # look at each record in each structure for strings
-        for ctx in memory_handler.get_cached_context():
+        for ctx in process_context.list_contextes():
             for record in ctx.listStructures():
                 for field in record.get_fields():
                     addr = record._vaddr + field.offset

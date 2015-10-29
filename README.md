@@ -16,6 +16,7 @@ Source Code
 1. https://github.com/trolldbois/volatility_plugins
 2. pip install haystack # https://github.com/trolldbois/python-haystack/
 3. pip install ctypeslib2 # https://github.com/trolldbois/ctypeslib
+4. pip install python-Levenshtein # 
  
 Memory sample
 =============
