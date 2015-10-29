@@ -40,6 +40,7 @@ Plugins:
     * haystackallocated: search for record in allocated memory chunks only (somewhat experimental)
     * haystackshow: load and show the value of a record if loaded from a specific address
     * haystackreverse: reverse all allocated structure to file and guesstimate the field type of each structure.
+    * haystackreversestrings: reverse all strings from allocated memory.
 
 
 For example, to search for all records that could ba a WinXP x86 Heaps in the zeus.vmem image process 1668 and 856:
