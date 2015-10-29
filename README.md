@@ -49,7 +49,7 @@ For example, to search for all records that could ba a WinXP x86 Heaps in the ze
 We will use haystackheap to print out the PID and the address of HEAPs. This is a search not using the PEB, 
 but only the constraints that a HEAP should have. 
 
-    $ vol.py --plugins=src -f zeus.vmem haystackheap -r haystack.structures.win32.winxp_32.HEAP -c examples/winxpheap.constraints -p 1668
+    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackheap -r haystack.allocators.win32.winxp_32.HEAP -c examples/winxpheap.constraints -p 1668
 
     ************************************************************************
     Pid:   1668
@@ -65,7 +65,7 @@ but only the constraints that a HEAP should have.
     
 Now we use different set of constraint on the values of the HEAP fields. Surprising fantom HEAP appears.
 
-    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackheap -r haystack.structures.win32.winxp_32.HEAP -c examples/winxpheap-relaxed.constraints -p 1668
+    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackheap -r haystack.allocators.win32.winxp_32.HEAP -c examples/winxpheap-relaxed.constraints -p 1668
 
     ************************************************************************
     Pid:   1668
@@ -85,7 +85,7 @@ Now we use different set of constraint on the values of the HEAP fields. Surpris
 
 You can now compare the content of these HEAPs to better understand why ? (this is a fictitious useless scenario)
 
-    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackshow -r haystack.structures.win32.winxp_32.HEAP -p 1668 -a 0x1eb0000 
+    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackshow -r haystack.allocators.win32.winxp_32.HEAP -p 1668 -a 0x1eb0000 
 
     ************************************************************************
     Pid:   1668
@@ -112,7 +112,7 @@ You can now compare the content of these HEAPs to better understand why ? (this 
 
 and a phantom one:
 
-    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackshow -r haystack.structures.win32.winxp_32.HEAP -p 1668 -a 0x730000 
+    $ vol.py --plugins=src -f ~/outputs/vol/zeus.vmem haystackshow -r haystack.allocators.win32.winxp_32.HEAP -p 1668 -a 0x730000 
 
     ************************************************************************
     Pid:   1668
